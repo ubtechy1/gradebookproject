@@ -262,7 +262,7 @@ def editAssignment():
         db.session.commit()
         return redirect(url_for("assignments"))
 
-# Delete's assignment based upon id given in request parameter
+# Delete assignment based upon id given in request parameter
 @app.route("/deleteassignment", methods=["POST"])
 def deleteAssignment():
     assignment = Assignments.query.get(request.form["deleteassignmentID"])
