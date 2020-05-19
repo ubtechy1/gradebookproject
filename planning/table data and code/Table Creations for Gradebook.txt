@@ -1,0 +1,39 @@
+
+CREATE TABLE users (
+        id INT NOT NULL AUTO_INCREMENT,
+        username VARCHAR(128) NOT NULL, 
+        password_hash VARCHAR(128) NOT NULL, 
+        PRIMARY KEY (id) 
+       
+);
+
+CREATE TABLE students (
+        id INT NOT NULL AUTO_INCREMENT, 
+        firstName VARCHAR(128) NOT NULL, 
+        lastName VARCHAR(128) NOT NULL, 
+        major VARCHAR(128) NOT NULL, 
+        email VARCHAR(128) NOT NULL, 
+        PRIMARY KEY (id)
+);
+
+
+CREATE TABLE assignments (
+        id INT NOT NULL AUTO_INCREMENT, 
+        name VARCHAR (180)  NOT NULL, 
+        description VARCHAR(180) NOT NULL, 
+        student_ID INT NOT NULL, 
+        PRIMARY KEY (id), 
+        FOREIGN KEY(student_ID) REFERENCES students(id)
+);
+
+
+CREATE TABLE grades (
+        id INT NOT NULL AUTO_INCREMENT, 
+        percentage FLOAT NOT NULL,
+        assignment_ID INT NOT NULL, 
+        student_ID INT NOT NULL, 
+        PRIMARY KEY (id), 
+        FOREIGN KEY(assignment_ID) REFERENCES assignments(id), 
+        FOREIGN KEY(student_ID) REFERENCES students(id)
+
+);
