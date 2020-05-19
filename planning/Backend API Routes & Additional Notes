@@ -1,0 +1,84 @@
+Purpose:
+The purpose of this document is to create a rough plan of all API routes that we will want to implement in our Gradebook project. The more CRUD functionality that can be captured here, the more easily we will be able to design the front-end. We may want to utilize JSON data for request and response object payload.
+Note: when a field is contained in {}, that means it will need to be replaced by the actual content (i.e. an id)
+Routes:
+Path: 	            	“/student”
+Request Type:               	GET
+Request Object:            	None
+Response Object:        	List of all student objects in alphabetical order (last name)
+Conflict Resolution:     	Return 400 if no students.
+Path: 	            	“/student/{studentID}”
+Request Type:               	GET
+Request Object:            	None
+Response Object:        	One student object, retrieved by matching id (200)
+Conflict Resolution:     	Return 400 if no matching student id is found
+Path: 	           	    	“/student”
+Request Type:	    	POST
+Request Object:        	One student object
+Response Object:     	String saying “Student {firstName, lastName} added to database” (201)
+Conflict resolution:    	If email address already matches existing student, throw error (400)
+
+ 
+
+Path: 	            	“/student/{studentID}”
+Request Type:               	DELETE
+Request Object:            	None
+Response Object:     	String saying “Student {firstName, lastName} deleted from database” (200)
+Conflict resolution:      	Return 400 if no matching student id is found
+Path: 	            	“/assignment”
+Request Type:               	GET
+Request Object:            	None
+Response Object:        	List of all assignment objects in alphabetical order (name)
+Conflict Resolution:     	Return 400 if no students.
+Path: 	            	“/assignment/{assignmentID}”
+Request Type:               	GET
+Request Object:            	None
+Response Object:        	One assignment object, retrieved by matching id (200)
+Conflict Resolution:     	Return 400 if no matching assignment id is found
+Path: 	            	“/assignment”
+Request Type:               	POST
+Request Object:            	One assignment object
+Response Object:        	String saying “Assignment {assignment name} added to database” (201)
+Conflict resolution:      	N/A
+Path: 	            	“/assignment/{assignmentID}
+Request Type:               	DELETE
+Request Object:            	None
+Response Object:   	String saying “Assignment {assignment name} deleted from database” (200)
+Conflict resolution:      	Return 400 if no matching assignment id is found
+Path: 	            	“/grades”
+Request Type:               	GET
+Request Object:            	None
+Response Object:        	List of all grade objects in order of id for ALL students
+Conflict Resolution:     	N/A 
+Path: 	            	“/grades/{studentID}”
+Request Type:               	GET
+Request Object:            	None
+Response Object:        	List of all grade objects in order of id for one particular student
+Conflict Resolution:     	Return 400 if no matching student id is found
+
+Path: 	            	“/grades”
+Request Type:               	POST
+Request Object:            	Grade object
+Response Object:        	
+String saying “Grade for assignment {assignmentID} for student {studentID} added to database” (200)
+Conflict Resolution:     	If assignmentID and studentID match, then throw error 400 
+
+
+Path: 	            	“/grades/{gradeID}”
+Request Type:               	PUT
+Request Object:            	Grade object
+Response Object:        	String saying “Grade with id {gradeID} updated to database” (200)
+Conflict Resolution:     	N/A 
+Path: 	            	“/user/{userID}”
+Request Type:               	GET
+Request Object:            	None
+Response Object:        	User object (200)
+Conflict Resolution:     	N/A 
+Path: 	            	“/user”
+Request Type:               	POST
+Request Object:            	User object
+Response Object:        	String saying “User with name {username} added to database” (201)
+Conflict Resolution:     	N/A
+
+
+Building the above routes should cover most of the functionality needed from the backend including advanced characteristics. Of course, we will need to write helper functions that these routes will call on for ease of development & to modularize our codebase.
