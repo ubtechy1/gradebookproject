@@ -30,7 +30,8 @@ app.secret_key = "TheAlpha&0mega#1"
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-# Database Model Definitions
+
+# Database Model Schema Definitions
 #-------------------------------
 
 class Users(db.Model, UserMixin):
@@ -90,6 +91,7 @@ class Grades(db.Model):
 # Template App Routes
 # -------------------------------------
 
+# login page
 @app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
@@ -111,11 +113,14 @@ def login():
     login_user(user)
     return redirect(url_for("index"))
 
+#index
 @app.route("/index")
 @login_required
 def index ():
     return render_template("index.html")
 
+# GET - view list of all students (in order of id)
+# POST - add student to database
 @app.route("/students", methods=["GET", "POST"])
 @login_required
 def students():
@@ -130,23 +135,20 @@ def students():
         db.session.commit()
         return redirect(url_for('students'))
 
-@app.route("/sort", methods=["GET","POST"])
+# Same as the '/students' route but simply displays students in alphabetical order of first name
+@app.route("/sort", methods=["GET"])
 @login_required
 def sort():
     if request.method == "GET":
         query = db.session.query(Students).order_by(Students.firstName.asc())
         return render_template("students.html", students=query)
-    if request.method == "POST":
-        student = Students(firstName=request.form["firstName"],lastName=request.form["lastName"],major=request.form["major"],email=request.form["email"])
-        db.session.add(student)
-        for assignment in db.session.query(Assignments).distinct():
-            db.session.add(Grades(assignment_id = assignment.id, student_id = student.id, percentage = None))
-        db.session.commit()
-        return redirect(url_for('sort'))
 
+# GET - returns a page with student's current info & grades displayed in editable text boxes
+# POST - Modify student info & grades into database as per updated text box values
 @app.route("/editstudent", methods=["GET","POST"])
 def editStudent():
 
+    # query student based upon id provided in request parameter, joined load to pull grades. Aggregate calculated by averaging the student's grades. All parameters then passed to the front-end.
     if request.method == "GET":
         studentID = request.args.get('studentid')
         student = db.session.query(Students).get(studentID)
@@ -157,7 +159,9 @@ def editStudent():
         aggregate = db.session.query(db.func.avg(Grades.percentage)).filter(Grades.student_id == studentID).scalar()
         return render_template("editstudent.html", student = student, grades = grades, aggregate = aggregate)
 
+
     if request.method == "POST":
+        #   student is queried based upon id provided in request parameter, pulls all student's grades too, then update student's info from form data.
         studentID = request.form['studentid']
         student = db.session.query(Students).get(studentID);
         grades = db.session.query(Grades).filter(Grades.student_id == studentID).all();
@@ -167,9 +171,7 @@ def editStudent():
         student.major = request.form["major"]
         student.email = request.form["email"]
 
-        # for index, grade in grades:
-        #     grade.percentage = request.form["grades"][index]
-
+        # Update all grade fields as per form data (newGrades), loop iterates through each grade query and updates respectively.
         index = 0
         newGrades = request.form.getlist("grades")
         for grade in grades:
@@ -182,7 +184,7 @@ def editStudent():
         db.session.commit()
         return redirect(url_for("students"))
 
-
+# queries student based upon id provided in request parameter and deletes from database
 @app.route("/deletestudent", methods=["POST"])
 def deleteStudent():
     student = Students.query.get(request.form["deleteId"])
@@ -190,21 +192,25 @@ def deleteStudent():
     db.session.commit()
     return redirect(url_for('students'))
 
+# GET- returns two dimensional grid of students vs assignments, and the respective percentage they received. Student and Assignment names are hyperlinked to the 'editStudent' & 'deleteStudent' routes respectively, for convenience of editing.
 
-@app.route("/grades", methods=["GET", "POST"])
+@app.route("/grades", methods=["GET"])
 @login_required
 def grades():
-    if request.method == "GET":
+    # querying all students & grades in ascending id order, with joined load for all foreign key data
+    query = db.session.query(Grades).order_by(Grades.student_id.asc(),Grades.assignment_id.asc())
+    query = query.options(
+        joinedload(Grades.students),
+        joinedload(Grades.assignments)
+    )
+    query2 = db.session.query(Assignments)
+    # parameters passed to the render template for rendering in the front-end
+    return render_template("grades.html", grades=query, assignments = query2)
 
-        query = db.session.query(Grades).order_by(Grades.student_id.asc(),Grades.assignment_id.asc())
-        query = query.options(
-            joinedload(Grades.students),
-            joinedload(Grades.assignments)
-        )
-        query2 = db.session.query(Assignments)
-
-        return render_template("grades.html", grades=query, assignments = query2)
-
+# GET - displays all assignments in order of primary key (id) ascending value
+#       [note the template does not render the id, but rather an arbitrary numbering from 1 to n-1, incrementing by 1, where n = # of assignments in order of ascending id.
+#       This is done for ease of viewing by the user, as id primary key is irrelevant to be viewed by the user.]
+# POST - Adds a new assignment to the database based upon request form body data
 @app.route("/assignments", methods=["GET", "POST"])
 @login_required
 def assignments():
@@ -215,15 +221,19 @@ def assignments():
     db.session.add(assignment)
     db.session.commit()
 
+    # fills in null values for all the newly created student's assignments, will require updating via the '/editassignments' route
     for student in db.session.query(Students).distinct():
         db.session.add(Grades(assignment_id = assignment.id, student_id = student.id, percentage = None))
 
     db.session.commit()
     return redirect (url_for('assignments'))
 
+# GET - returns a page with assignment's current info & grades (of all students for that particular assignment) displayed in editable text boxes
+# POST - Modify assignment info & grades into database as per updated text box values
 @app.route("/editassignment", methods=["GET","POST"])
 def editAssignment():
 
+    # Query assignment information (i.e. name/description) & grade values of all students for that assignment and render to the template, query via id given by request parameter
     if request.method == "GET":
         assignmentID = request.args.get('assignmentid')
         assignment = db.session.query(Assignments).get(assignmentID);
@@ -233,6 +243,7 @@ def editAssignment():
         )
         return render_template("editassignment.html", assignment = assignment, grades = grades)
 
+    #   Assignment is queried based upon id provided in request parameter, pulls all assignment's grades too, then update assignment's info from form data.
     if request.method == "POST":
         assignmentID = request.form['assignmentid']
         assignment = db.session.query(Assignments).get(assignmentID);
@@ -241,6 +252,7 @@ def editAssignment():
         assignment.name = request.form["name"]
         assignment.description = request.form["description"]
 
+        # Update all grade fields as per form data (newGrades), loop iterates through each grade query and updates respectively.
         index = 0
         newGrades = request.form.getlist("grades")
         for grade in grades:
@@ -250,6 +262,7 @@ def editAssignment():
         db.session.commit()
         return redirect(url_for("assignments"))
 
+# Delete's assignment based upon id given in request parameter
 @app.route("/deleteassignment", methods=["POST"])
 def deleteAssignment():
     assignment = Assignments.query.get(request.form["deleteassignmentID"])
@@ -257,7 +270,7 @@ def deleteAssignment():
     db.session.commit()
     return redirect(url_for('assignments'))
 
-
+# logs user out
 @app.route("/logout")
 @login_required
 def logout():
